@@ -6,9 +6,14 @@ let updateNote = document.getElementById("updatenote");
 
 let isVideo = false;
 let model = null;
-let lastState = '';
 let eX = 0;
 let eY = 0;
+let startX = 0, startY = 0;
+let vX = 0, vY = 0;
+let tX = 0, tY = 0;
+let xDif, yDif;
+let lastState = '';
+let stateHistory = [];
 
 const modelParams = {
     flipHorizontal: true,   // flip e.g for video  
@@ -46,9 +51,47 @@ function toggleVideo() {
 
 function runDetection() {
     model.detect(video).then(predictions => {
-        const temp = predictions.find((p) => p.label === 'open' || p.label === 'closed');
-        lastState = temp ? temp.label : 'none';
-        console.log(predictions);
+        const filteredPredictions = predictions.filter((p) => p.label === 'open' || p.label === 'closed' || p.label === 'point');
+
+        let current;
+        // ignore empty array filteredPredictions as current is undefined
+        if (filteredPredictions.length === 1) current = filteredPredictions[0];
+        if (filteredPredictions.length === 2) current = filteredPredictions.sort((a, b) => a.bbox[0] < b.bbox[0])[0];
+        if (current) stateHistory.push(current.label);
+        if (stateHistory.length >= 4) stateHistory = stateHistory.slice(-4) || [];
+        console.log(stateHistory);
+        if (stateHistory.filter((e) => stateHistory[0] === e).length === 4) console.log('tada');
+        
+        const vidW = document.getElementById('myvideo').width;
+        const vidH = document.getElementById('myvideo').height;
+
+        
+        if (current) {
+
+          vX = map(current.bbox[0], 0, vidW, 0, width / 2);
+          tX = current.bbox[0];
+          vY = map(current.bbox[1], 0, vidH, 0, height / 2);
+          tY = current.bbox[1];
+
+          if (current.label === 'closed') {
+            eX = width/2;
+            eY = height/2;
+          }
+          
+          if (lastState === 'open' && current.label === 'point') {
+            startX = vX;
+            startY = vY;
+          }
+  
+          if (lastState === 'point' && current.label === 'open') {
+            eX += (vX - startX);
+            eY += (vY - startY);
+          }
+        }
+
+
+        lastState = current ? current.label : 'none';
+        // console.log(predictions);
         model.renderPredictions(predictions, canvas, context, video);
         if (isVideo) {
             requestAnimationFrame(runDetection);
@@ -66,13 +109,19 @@ handTrack.load(modelParams).then(lmodel => {
 
 
 function setup() {
-  createCanvas(400, 400);
+  createCanvas(640, 480);
   eX = width / 2;
   eY = height / 2;
 }
 
 function draw() {
+  if (lastState === 'none' || lastState === 'closed') background(220);
   background(220);
-  ellipse(eX, eY, 20);
-  text(lastState, width / 2, height / 2);
+  noStroke();
+  fill(255, 0, 0);
+  ellipse(eX, eY, 10);
+  fill(125);
+  ellipse(tX, tY, 10);
+  line(eX, eY, startX, startY);
+  // text(lastState, width / 2, height / 2);
 }
