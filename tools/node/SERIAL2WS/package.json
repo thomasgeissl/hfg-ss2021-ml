@@ -1,0 +1,19 @@
+{
+  "name": "serial2ws",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.7",
+    "serialport": "^9.2.0",
+    "uuid": "^8.3.2",
+    "ws": "^7.5.0"
+  }
+}
